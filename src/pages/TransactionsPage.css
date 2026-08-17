@@ -1,0 +1,29 @@
+.transactions-page .filter-row {
+  justify-content: flex-start;
+}
+
+.list-controls {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.list-controls .search-field {
+  flex: 1 1 240px;
+}
+
+.list-controls .sort-field {
+  flex: 0 1 220px;
+}
+
+@media (max-width: 720px) {
+  .list-controls {
+    flex-direction: column;
+  }
+
+  .list-controls .search-field,
+  .list-controls .sort-field {
+    flex: 1 1 auto;
+  }
+}

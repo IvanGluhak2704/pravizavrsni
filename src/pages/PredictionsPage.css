@@ -1,0 +1,10 @@
+.predictions-page .prediction-table-row {
+  align-items: flex-start;
+}
+
+.prediction-amount {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
