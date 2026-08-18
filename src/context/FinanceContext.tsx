@@ -6,12 +6,27 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import {
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDocs,
+  onSnapshot,
+  orderBy,
+  query,
+  setDoc,
+  writeBatch,
+} from "firebase/firestore";
 import type { Transakcija, Kategorija, FinancijskeStatistike } from "../types";
+import { db, isFirebaseConfigured } from "../services/firebase";
+import { useAuth } from "./AuthContext";
 
 interface TipFinancijskogKonteksta {
   transakcije: Transakcija[];
   kategorije: Kategorija[];
   statistika: FinancijskeStatistike;
+  sinkronizacija: boolean;
   dodajTransakciju: (
     transaction: Omit<Transakcija, "id" | "kreiranoU">,
   ) => void;
@@ -109,7 +124,34 @@ function ucitajPocetnoStanje(): FinancijskoStanje {
   }
 }
 
+async function posijZadaneKategorije(uid: string) {
+  const firestore = db;
+  if (!firestore) return;
+
+  const categoriesRef = collection(firestore, "users", uid, "categories");
+  const existing = await getDocs(categoriesRef);
+  if (!existing.empty) return;
+
+  const batch = writeBatch(firestore);
+
+  zadaneKategorije.forEach((category) => {
+    const ref = doc(categoriesRef);
+    batch.set(ref, {
+      name: category.name,
+      vrsta: category.vrsta,
+      color: category.color,
+      icon: category.icon,
+    });
+  });
+
+  await batch.commit();
+}
+
 export function FinancijskiProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
+  const uid = user?.uid;
+  const cloudMode = isFirebaseConfigured && Boolean(uid);
+
   const [state, setState] = useState<FinancijskoStanje>(ucitajPocetnoStanje);
   const stats = useMemo(
     () => izracunajStatistiku(state.transakcije),
@@ -117,12 +159,63 @@ export function FinancijskiProvider({ children }: { children: ReactNode }) {
   );
 
   useEffect(() => {
+    if (cloudMode) return;
     window.localStorage.setItem(KLJUC_SPREMANJA, JSON.stringify(state));
-  }, [state]);
+  }, [state, cloudMode]);
+
+  useEffect(() => {
+    if (!cloudMode || !db || !uid) return;
+
+    posijZadaneKategorije(uid).catch((err) =>
+      console.error("Greška pri postavljanju početnih kategorija:", err),
+    );
+
+    const transactionsRef = collection(db, "users", uid, "transactions");
+    const categoriesRef = collection(db, "users", uid, "categories");
+
+    const unsubTransactions = onSnapshot(
+      query(transactionsRef, orderBy("kreiranoU", "desc")),
+      (snapshot) => {
+        const transakcije = snapshot.docs.map((docSnap) => ({
+          id: docSnap.id,
+          ...docSnap.data(),
+        })) as Transakcija[];
+        setState((current) => ({ ...current, transakcije }));
+      },
+      (err) => console.error("Greška pri dohvatu transakcija:", err),
+    );
+
+    const unsubCategories = onSnapshot(
+      categoriesRef,
+      (snapshot) => {
+        const kategorije = snapshot.docs.map((docSnap) => ({
+          id: docSnap.id,
+          ...docSnap.data(),
+        })) as Kategorija[];
+        setState((current) => ({ ...current, kategorije }));
+      },
+      (err) => console.error("Greška pri dohvatu kategorija:", err),
+    );
+
+    return () => {
+      unsubTransactions();
+      unsubCategories();
+    };
+  }, [cloudMode, uid]);
 
   function dodajTransakciju(
     transaction: Omit<Transakcija, "id" | "kreiranoU">,
   ) {
+    if (cloudMode && db && uid) {
+      addDoc(collection(db, "users", uid, "transactions"), {
+        ...transaction,
+        kreiranoU: Date.now(),
+      }).catch((err) =>
+        console.error("Greška pri spremanju transakcije:", err),
+      );
+      return;
+    }
+
     const newTransaction: Transakcija = {
       ...transaction,
       id: Date.now().toString(),
@@ -135,6 +228,13 @@ export function FinancijskiProvider({ children }: { children: ReactNode }) {
   }
 
   function obrisiTransakciju(id: string) {
+    if (cloudMode && db && uid) {
+      deleteDoc(doc(db, "users", uid, "transactions", id)).catch((err) =>
+        console.error("Greška pri brisanju transakcije:", err),
+      );
+      return;
+    }
+
     setState((current) => ({
       ...current,
       transakcije: current.transakcije.filter(
@@ -144,6 +244,15 @@ export function FinancijskiProvider({ children }: { children: ReactNode }) {
   }
 
   function azurirajTransakciju(id: string, transaction: Partial<Transakcija>) {
+    if (cloudMode && db && uid) {
+      setDoc(doc(db, "users", uid, "transactions", id), transaction, {
+        merge: true,
+      }).catch((err) =>
+        console.error("Greška pri ažuriranju transakcije:", err),
+      );
+      return;
+    }
+
     setState((current) => ({
       ...current,
       transakcije: current.transakcije.map((item) =>
@@ -153,6 +262,13 @@ export function FinancijskiProvider({ children }: { children: ReactNode }) {
   }
 
   function dodajKategoriju(category: Omit<Kategorija, "id">) {
+    if (cloudMode && db && uid) {
+      addDoc(collection(db, "users", uid, "categories"), category).catch(
+        (err) => console.error("Greška pri spremanju kategorije:", err),
+      );
+      return;
+    }
+
     const newCategory: Kategorija = { ...category, id: Date.now().toString() };
     setState((current) => ({
       ...current,
@@ -161,6 +277,13 @@ export function FinancijskiProvider({ children }: { children: ReactNode }) {
   }
 
   function obrisiKategoriju(id: string) {
+    if (cloudMode && db && uid) {
+      deleteDoc(doc(db, "users", uid, "categories", id)).catch((err) =>
+        console.error("Greška pri brisanju kategorije:", err),
+      );
+      return;
+    }
+
     setState((current) => ({
       ...current,
       kategorije: current.kategorije.filter((category) => category.id !== id),
@@ -171,6 +294,7 @@ export function FinancijskiProvider({ children }: { children: ReactNode }) {
     transakcije: state.transakcije,
     kategorije: state.kategorije,
     statistika: stats,
+    sinkronizacija: cloudMode,
     dodajTransakciju,
     obrisiTransakciju,
     azurirajTransakciju,
@@ -188,6 +312,6 @@ export function FinancijskiProvider({ children }: { children: ReactNode }) {
 export function useFinancije() {
   const context = useContext(FinancijskiKontekst);
   if (!context)
-    throw new Error("koristi financije mora biti unutar FinancijskiProvider");
+    throw new Error("koristiFinancije mora biti unutar FinancijskiProvider");
   return context;
 }

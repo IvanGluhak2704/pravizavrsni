@@ -8,30 +8,40 @@ import {
   Menu,
   X,
   PlusCircle,
+  LogOut,
 } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 import "./AppLayout.css";
 
 const pageMeta: Record<string, { title: string; subtitle: string }> = {
-  "/": { title: "Početna", subtitle: "Pregled financija" },
+  "/": {
+    title: "Početna",
+    subtitle: "Brzi pregled financija i statusa računa",
+  },
   "/transakcije": {
     title: "Transakcije",
     subtitle: "Unos, pregled i brisanje transakcija",
   },
-  "/racuni": { title: "Računi", subtitle: "Pregled i upravljanje računima" },
+  "/racuni": {
+    title: "Računi",
+    subtitle: "Pregled stanja, kategorija i zdravlja budžeta",
+  },
   "/predikcija": {
     title: "Predikcija",
-    subtitle: "Procjena budućih financija",
+    subtitle: "Procjena budućih troškova i prihoda",
   },
 };
 
 export function AppLayout() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const location = useLocation();
   const navigate = useNavigate();
+  const location = useLocation();
+  const { user, isFirebaseConfigured, logout } = useAuth();
 
-  const currentPageMeta = useMemo(() => {
-    return pageMeta[location.pathname] ?? { title: "", subtitle: "" };
-  }, [location.pathname]);
+  const currentMeta = useMemo(
+    () => pageMeta[location.pathname] ?? pageMeta["/"],
+    [location.pathname],
+  );
 
   const navLinks = [
     { to: "/", label: "Početna", icon: LayoutDashboard },
@@ -42,7 +52,7 @@ export function AppLayout() {
 
   return (
     <div className="app-frame">
-      <aside className={`app-sidebar ${mobileNavOpen ? "open" : ""}`}>
+      <aside className={`sidebar ${mobileNavOpen ? "sidebar-open" : ""}`}>
         <div className="sidebar-brand">
           <div className="brand-mark">F</div>
           <div>
@@ -63,42 +73,59 @@ export function AppLayout() {
                   `sidebar-link ${isActive ? "active" : ""}`
                 }
               >
-                <Icon size={20} />
+                <Icon size={18} />
                 <span>{link.label}</span>
               </NavLink>
             );
           })}
         </nav>
+
         <div className="sidebar-footer">
-          <p>Osobne financije</p>
+          {isFirebaseConfigured && user ? (
+            <p className="sidebar-user">{user.email}</p>
+          ) : (
+            <p>Osobne financije</p>
+          )}
           <button
             className="primary-btn sidebar-cta"
             type="button"
             onClick={() => navigate("/transakcije")}
           >
-            <PlusCircle size={20} />
-            <span>Dodaj transakciju</span>
+            <PlusCircle size={18} />
+            Nova transakcija
           </button>
+          {isFirebaseConfigured && user ? (
+            <button
+              className="secondary-btn sidebar-cta"
+              type="button"
+              onClick={() => logout()}
+            >
+              <LogOut size={18} />
+              Odjava
+            </button>
+          ) : null}
         </div>
       </aside>
-      <div className="app-shell">
+
+      <div className="content-shell">
         <header className="topbar">
           <button
             className="icon-button mobile-toggle"
             type="button"
             onClick={() => setMobileNavOpen((current) => !current)}
-            aria-label={
-              mobileNavOpen ? "Zatvori navigaciju" : "Otvori navigaciju"
-            }
+            aria-label={mobileNavOpen ? "Zatvori izbornik" : "Otvori izbornik"}
+            aria-expanded={mobileNavOpen}
           >
-            {mobileNavOpen ? <X size={20} /> : <Menu size={20} />}
+            {mobileNavOpen ? <X size={18} /> : <Menu size={18} />}
           </button>
+
           <div className="topbar-copy">
-            <p className="topbar-eyebrow">Digital Finance studio</p>
-            <h1 className="topbar-title">{currentPageMeta.title}</h1>
-            <p className="topbar-subtitle">{currentPageMeta.subtitle}</p>
+            <p className="topbar-eyebrow">Digital Finance Studio</p>
+            <h1>{currentMeta.title}</h1>
+            <p>{currentMeta.subtitle}</p>
           </div>
         </header>
+
         <main className="page-body">
           <Outlet />
         </main>
