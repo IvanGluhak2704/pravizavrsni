@@ -110,7 +110,6 @@ export function HomePage() {
           </button>
         </div>
       </section>
-
       <section className="metrics-grid">
         <InfoCard
           title="Ukupni prihod"
@@ -137,7 +136,6 @@ export function HomePage() {
           tone="violet"
         />
       </section>
-
       <section className="content-grid">
         <article className="panel">
           <div className="panel-header">
@@ -146,7 +144,6 @@ export function HomePage() {
               <h2>Predviđeni tokovi</h2>
             </div>
           </div>
-
           <ResponsiveContainer width="100%" height={300}>
             <LineChart
               data={predictions.map((item) => ({
@@ -195,7 +192,6 @@ export function HomePage() {
               <h2>Potrošnja po kategorijama</h2>
             </div>
           </div>
-
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
@@ -274,7 +270,7 @@ export function HomePage() {
           <div className="panel-header">
             <div>
               <p className="panel-kicker">Sažetak</p>
-              <h2>Pregled salda</h2>
+              <h2>Pregled cijelokupnog prihoda i troška</h2>
             </div>
           </div>
 

@@ -2,11 +2,9 @@
   display: grid;
   gap: 10px;
 }
-
 .home-page .hero-actions-grid {
   justify-content: flex-start;
 }
-
 .home-page .hero-card {
   background: linear-gradient(135deg, #f5f3ff, #eff6ff);
 }

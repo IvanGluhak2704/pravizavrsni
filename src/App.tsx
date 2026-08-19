@@ -8,7 +8,7 @@ import { TransactionsPage } from "./pages/TransactionsPage";
 import { useAuth } from "./context/AuthContext";
 
 export default function App() {
-  const {user, loading, isFirebaseConfigured} = useAuth();
+  const { user, loading, isFirebaseConfigured } = useAuth();
 
   if (!isFirebaseConfigured && loading) {
     return (
@@ -18,11 +18,8 @@ export default function App() {
     );
   }
   if (isFirebaseConfigured && !user) {
-    return (
-      return (<LoginPage />);
-    );
+    return <LoginPage />;
   }
-
 
   return (
     <Routes>

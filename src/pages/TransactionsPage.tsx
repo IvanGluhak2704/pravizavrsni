@@ -69,8 +69,7 @@ export function TransactionsPage() {
           <p className="panel-kicker">Unos i upravljanje</p>
           <h2>Dodavanje i pregled transakcija</h2>
           <p className="section-copy">
-            Unos transakcije odmah mijenja stanje u cijeloj aplikaciji.
-            Uređivanje, brisanje i filtriranje su također aktivni.
+            Uređivanje, brisanje i filtriranje transakcije.
           </p>
         </div>
       </section>
