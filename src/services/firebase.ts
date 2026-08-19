@@ -11,10 +11,6 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-/**
- * Aplikacija radi i bez Firebase konfiguracije (lokalni način rada s localStorage).
- * Cloud sinkronizacija i prijava se aktiviraju tek kada su sve VITE_FIREBASE_* varijable postavljene u .env datoteci.
- */
 export const isFirebaseConfigured = Boolean(
   firebaseConfig.apiKey && firebaseConfig.projectId,
 );
