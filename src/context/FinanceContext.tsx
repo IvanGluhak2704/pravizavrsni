@@ -40,7 +40,7 @@ interface FinancijskoStanje {
   transakcije: Transakcija[];
   kategorije: Kategorija[];
 }
-
+const KLJUC_SPREMANJA = "financial-tracker-state";
 const zadaneKategorije: Kategorija[] = [
   { id: "1", name: "Plača", vrsta: "income", color: "#10b981", icon: "PL" },
   { id: "2", name: "Hrana", vrsta: "expense", color: "#f59e0b", icon: "HR" },
@@ -63,6 +63,23 @@ const initialState: FinancijskoStanje = {
 const FinancijskiKontekst = createContext<TipFinancijskogKonteksta | undefined>(
   undefined,
 );
+
+function ucitajPocetnoStanje(): FinancijskoStanje {
+  if (typeof window === "undefined") {
+    return initialState;
+  }
+
+  const savedState = window.localStorage.getItem(KLJUC_SPREMANJA);
+  if (!savedState) {
+    return initialState;
+  }
+
+  try {
+    return JSON.parse(savedState) as FinancijskoStanje;
+  } catch {
+    return initialState;
+  }
+}
 
 function izracunajStatistiku(
   transactions: Transakcija[],
@@ -133,11 +150,16 @@ export function FinancijskiProvider({ children }: { children: ReactNode }) {
   const uid = user?.uid;
   const cloudMode = isFirebaseConfigured && Boolean(uid);
 
-  const [state, setState] = useState<FinancijskoStanje>(initialState);
+  const [state, setState] = useState<FinancijskoStanje>(ucitajPocetnoStanje());
   const stats = useMemo(
     () => izracunajStatistiku(state.transakcije),
     [state.transakcije],
   );
+
+  useEffect(() => {
+    if (cloudMode) return;
+    window.localStorage.setItem(KLJUC_SPREMANJA, JSON.stringify(state));
+  }, [state, cloudMode]);
 
   useEffect(() => {
     if (!cloudMode || !db || !uid) return;

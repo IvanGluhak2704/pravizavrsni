@@ -123,6 +123,7 @@ export function PredictionsPage() {
                   <span className="positive">
                     Prihod {formatCurrency(item.predvidjeniPrihod)}
                   </span>
+                  <br />
                   <span className="negative">
                     Trošak {formatCurrency(item.predvidjeniTrosak)}
                   </span>
